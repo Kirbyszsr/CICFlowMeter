@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.io.RandomAccessFile;
 
 import static cic.cs.unb.ca.Sys.FILE_SEP;
 import static cic.cs.unb.ca.Sys.LINE_SEP;
@@ -45,6 +46,8 @@ public class InsertCsvRow implements Runnable {
         File file = new File(savepath+filename);
         FileOutputStream output = null;
 
+        RandomAccessFile pipe = null;
+  
         try {
             if (file.exists()) {
                 output = new FileOutputStream(file, true);
@@ -56,8 +59,12 @@ public class InsertCsvRow implements Runnable {
                     output.write((header+LINE_SEP).getBytes());
                 }
             }
+            // connect to the named pipe
+            pipe = new RandomAccessFile("/tmp/flowmeter", "rw"); 
             for (String row : rows) {
                 output.write((row+LINE_SEP).getBytes());
+                // write to named pipe
+                pipe.write((row+LINE_SEP).getBytes(), 0, (row+LINE_SEP).length());
             }
 
         } catch (FileNotFoundException e) {
@@ -68,6 +75,10 @@ public class InsertCsvRow implements Runnable {
             try {
                 if (output != null) {
                     output.close();
+                }
+                if (pipe != null) {
+                    // close the pipe
+                    pipe.close();                
                 }
             } catch (IOException e) {
                 e.printStackTrace();
